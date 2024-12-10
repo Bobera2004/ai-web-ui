@@ -14,18 +14,24 @@ model = load_model('emotion_recognition_model.h5')
 scaler = joblib.load(scaler_filename)
 
 def map_emotions(emotion):
-    if emotion in ['anger', 'disgust', 'fear', 'sadness']:
-        return 0  # Негативные эмоции
-    elif emotion in ['happiness', 'neutral', 'enthusiasm']:
-        return 1  # Позитивные эмоции
-    else:
-        return None
+    emotion_map = {
+        'anger': 0, 'disgust': 0, 'fear': 0, 'sadness': 0,  # Негативные эмоции
+        'happiness': 1, 'neutral': 1, 'enthusiasm': 1       # Позитивные эмоции
+    }
+    return emotion_map.get(emotion)
 
 def extract_features(audio_path, sr=16000):
     try:
         y, sr = librosa.load(audio_path, sr=sr)
-        mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40)
-        return np.mean(mfccs, axis=1)
+        
+        mfccs = np.mean(librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40), axis=1)
+        chroma = np.mean(librosa.feature.chroma_stft(y=y, sr=sr), axis=1)
+        spectral_contrast = np.mean(librosa.feature.spectral_contrast(y=y, sr=sr), axis=1)
+        spectral_centroid = np.mean(librosa.feature.spectral_centroid(y=y, sr=sr))
+        spectral_bandwidth = np.mean(librosa.feature.spectral_bandwidth(y=y, sr=sr))
+
+        features = np.hstack([mfccs, chroma, spectral_contrast, spectral_centroid, spectral_bandwidth])
+        return features
     except Exception as e:
         print(f"Error processing {audio_path}: {e}")
         return None
